@@ -10,6 +10,69 @@
 
 #include <iostream>
 
+std::string helpMessage()
+{
+    std::string out =
+    {
+        "vsganimation - Demonstrating animations in VulkanSceneGraph\n\n"
+        "Usage:\n"
+        "    vsganimation [options] <file>\n"
+        "\n"
+        "Options:\n"
+        "    -h, --help                 Shows this messages\n"
+        "    -f <INT>                   Number of frames to render. default = -1 = indefinite\n"
+        "    -t, --test                 Full screen immediate mode\n"
+        "    -st                        Windowed immediate mode\n"
+        "    --ga, --gpu-annotation     Annotate GPU. Overrides profiler and tracy\n"
+        "    --func                     Adds source location. Needs --gpu-annotation\n"
+        "    --pr, --profiler           Profile execution\n"
+        "    --tracy                    Instrument with Tracy, if compiled in\n"
+        "    --cpu                      Instrument CPU. Needs --profiler or --tracy\n"
+        "    --gpu                      Instrument GPU. Needs --profiler or --tracy\n"
+        "    --log-size                 Log file size limit. Needs --profiler\n"
+        "    --gpu-size                 GPU timestamp limit. Needs --profiler\n"
+        "    --direction <VECTOR>       Directional light direction. default = -0.25 0.25 -1.0\n"
+        "    --lambda <DOUBLE>          Shadow map lambda. default = 0.5\n"
+        "    --sd                       Shadow map distance. default = 1e8\n"
+        "    --nf                       Near far ratio. default = 0.001\n"
+        "    --sm                       Shadow maps per light. default = 3\n"
+        "    --pcss                     Percentage closer soft shadows. --sm != 0\n"
+        "    --soft                     Soft shadows. --sm != 0. Overrides --pcss\n"
+        "    --hard                     Hard shadows. --sm != 0. Overrides --soft and --pcss\n"
+        "    --shader-debug             Enable shadow map debug. --sm != 0\n"
+        "    -n                         Number of copies. Default = 1\n"
+        "    --nop, --no-auto-play      Don't play animations. Default = Play\n"
+        "    -o                         Output filename. Default = empty, so no output file\n"
+        "    --no-base                  Don't add base quad for shadows. Default has base quad\n"
+        "    --earth <FILE>             Add earth model. Default has no earth model\n"
+        "    --location <VECTOR>        Location of earth model. Default is 0.0 0.0 0.0\n"
+        "    --scale <DOUBLE>           Scale of earth model. Default is 1.0\n"
+        "\n"
+        "Examples:\n"
+        "    vsganimation glTF-Sample-Models/2.0/BoxAnimated/glTF/BoxAnimated.gltf\n"
+        "\n"
+        "Running key map:\n"
+        "    p       Play next animation\n"
+        "    s       Stop animation\n"
+        "    a       Play all animations\n"
+        "    <       Decrease animation speeds by 0.25\n"
+        "    >       Increase animation speeds by 0.25\n"
+    };
+    return out;
+}
+
+std::string errorHelpMessage()
+{
+    std::string out =
+    {
+        "    vsganimation - Demonstrating animations in VulkanSceneGraph\n"
+        "          Usage: vsganimation [options] <file>\n"
+        "        Example: vsganimation glTF-Sample-Models/2.0/BoxAnimated/glTF/BoxAnimated.gltf\n"
+        "           Help: vsganimation --help\n"
+    };
+    return out;
+}
+
 class AnimationControl : public vsg::Inherit<vsg::Visitor, AnimationControl>
 {
 public:
@@ -111,6 +174,12 @@ int main(int argc, char** argv)
 {
     // set up defaults and read command line arguments to override them
     vsg::CommandLine arguments(&argc, argv);
+
+    if (arguments.read("-h") || arguments.read("--help"))
+    {
+        std::cout << std::endl << helpMessage() << std::endl;
+        return 0;
+    }
 
     auto windowTraits = vsg::WindowTraits::create(arguments);
 
@@ -256,7 +325,8 @@ int main(int argc, char** argv)
 
     if (argc <= 1)
     {
-        std::cout << "Please specify model to load on command line." << std::endl;
+        std::cerr << "ERROR: Please specify model to load on command line." << std::endl;
+        std::cerr << errorHelpMessage() << std::endl;
         return 0;
     }
 
@@ -282,12 +352,16 @@ int main(int argc, char** argv)
                 node->accept(computeBounds);
                 models.push_back(ModelBound{node, computeBounds.bounds});
             }
+            else
+            {
+                std::cerr << "WARNING: Failed to load file: " << filename << std::endl;
+            }
         }
     }
 
     if (models.empty())
     {
-        std::cout << "Failed to load any models, please specify filenames of 3d models on the command line," << std::endl;
+        std::cerr << "ERROR: Failed to load any models" << std::endl;
         return 1;
     }
 
@@ -441,7 +515,7 @@ int main(int argc, char** argv)
     auto window = vsg::Window::create(windowTraits);
     if (!window)
     {
-        std::cout << "Could not create window." << std::endl;
+        std::cerr << "Error: Could not create window." << std::endl;
         return 1;
     }
 
